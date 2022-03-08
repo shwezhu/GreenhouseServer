@@ -1,5 +1,5 @@
 from datetime import datetime
-from database_utils import DatabaseUtils
+from database.database_utils import DatabaseUtils
 
 
 connection = DatabaseUtils.connect_sql()
