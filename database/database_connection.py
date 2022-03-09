@@ -1,7 +1,7 @@
 import mysql.connector
 
 
-class Database:
+class DatabaseConnection:
     def __init__(self, host, user, password, database_name):
         self._conn = None
         try:
@@ -15,11 +15,8 @@ class Database:
             print("Something went wrong: {}".format(err))
         self._cursor = self._conn.cursor()
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close()
+    def __del__(self):
+        self._conn.close()
 
     @property
     def connection(self):

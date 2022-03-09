@@ -1,10 +1,10 @@
 from datetime import datetime
-from database.database import Database
+from database.database_connection import DatabaseConnection
+from database.database_utils import DatabaseUtils
 
-
-with Database('localhost', 'root', '778899', 'greenhouse') as db:
-    sql = "insert into temperature (temperature, time) values (%s, %s)"
-    value = (26.3, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), )
-    db.execute(sql, value)
-    comments = db.query('select * from temperature')
-    print(comments)
+db = DatabaseUtils(DatabaseConnection('localhost', 'root', '778899', 'greenhouse'))
+sql = "insert into temperature (temperature, time) values (%s, %s)"
+value = (28.3, datetime.now().strftime('%Y-%m-%d %H:%M'))
+db.execute(sql, value)
+r = db.query('select * from temperature')
+print(r)
