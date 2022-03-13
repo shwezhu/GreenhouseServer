@@ -7,6 +7,19 @@ from database.database_connection import DatabaseConnection
 from database.database_utils import DatabaseUtils
 
 
+class HttpUtils:
+    code = {
+        'success': '200 OK',
+        'syntax_error': '400 Bad Request',
+        'not_found': '404 Not Found'
+    }
+
+    type = {
+        'json': 'application/json',
+        'text': 'text/plain'
+    }
+
+
 def is_json(myjson):
     try:
         json.loads(myjson)
@@ -24,8 +37,15 @@ def parse_request(request):
         return {'error': 'invalid json format'}
 
 
-def handle_error(conn, error):
-    conn.send(error['error'])
+def format_response(status_code, content_type, response_body):
+    return 'HTTP/1.1 {code}\r\nContent-Type: {type}\r\nContent-Length: {length}\r\n\r\n{body}' \
+        .format(code=status_code, type=content_type,
+                length=len(response_body), body=response_body)
+
+
+def handle_error(conn, status_code, response_body):
+    rp = format_response(status_code, HttpUtils.type['json'], response_body)
+    conn.sendall(rp.encode('ASCII'))
 
 
 db = DatabaseUtils(DatabaseConnection('localhost', 'root', '778899', 'greenhouse'))
@@ -52,20 +72,24 @@ def handle_client(conn, _mask):
     # When a recv returns 0 bytes, it means the other side has closed the connection.
     data = conn.recv(1024)
     if data:
-        request = parse_request(data)
-        print('echoing', repr(data), 'to', conn.getpeername())
-        if 'error' in request.keys():
-            handle_error(conn, request)
-        else:
-            handle_request(conn, request)
+        print('received ', repr(data), 'from', conn.getpeername())
+        response = 'HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: ' \
+                   '{length}\r\n\r\n{body}'.format(length=len(body), body=body)
+        conn.send(response.encode('ASCII'))
+        # request = parse_request(data)
+        # print('received ', repr(data), 'from', conn.getpeername())
+        # if 'error' in request.keys():
+        #     handle_error(conn, request)
+        # else:
+        #     handle_request(conn, request)
     sel.unregister(conn)
     conn.close()
 
 
 sel = selectors.DefaultSelector()
-listen_sock = socket.socket()
+listen_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 try:
-    listen_sock.bind(('0.0.0.0', 6666))
+    listen_sock.bind(('0.0.0.0', 8080))
 except OSError as msg:
     print('sock.bind(): ' + str(msg))
     sys.exit()
