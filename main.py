@@ -40,12 +40,12 @@ def parse_request(request):
 def format_response(status_code, content_type, response_body):
     return 'HTTP/1.1 {code}\r\nContent-Type: {type}\r\nContent-Length: {length}\r\n\r\n{body}' \
         .format(code=status_code, type=content_type,
-                length=len(response_body), body=response_body)
+                length=len(response_body.encode('utf-8')), body=response_body)
 
 
 def handle_error(conn, status_code, response_body):
     rp = format_response(status_code, HttpUtils.type['json'], response_body)
-    conn.sendall(rp.encode('ASCII'))
+    conn.sendall(rp.encode('utf-8'))
 
 
 db = DatabaseUtils(DatabaseConnection('localhost', 'root', '778899', 'greenhouse'))
@@ -70,18 +70,14 @@ def handle_client(conn, _mask):
     # The return value is a bytes object representing the data received.
     # The maximum amount of data to be received at once is specified by bufsize.
     # When a recv returns 0 bytes, it means the other side has closed the connection.
-    data = conn.recv(1024)
+    data = conn.recv(1024).decode('utf-8')
     if data:
+        request = parse_request(data)
         print('received ', repr(data), 'from', conn.getpeername())
-        response = 'HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: ' \
-                   '{length}\r\n\r\n{body}'.format(length=len(body), body=body)
-        conn.send(response.encode('ASCII'))
-        # request = parse_request(data)
-        # print('received ', repr(data), 'from', conn.getpeername())
-        # if 'error' in request.keys():
-        #     handle_error(conn, request)
-        # else:
-        #     handle_request(conn, request)
+        if 'error' in request.keys():
+            # handle_error(conn, request)
+        else:
+            handle_request(conn, request)
     sel.unregister(conn)
     conn.close()
 
