@@ -1,10 +1,100 @@
-from datetime import datetime
+import sys
+import socket
+import selectors
+import json
+
 from database.database_connection import DatabaseConnection
 from database.database_utils import DatabaseUtils
 
+
+def is_json(myjson):
+    try:
+        json.loads(myjson)
+    except ValueError:
+        return False
+    return True
+
+
+# if 'error' in dict.keys():
+# print("value =", dict[error])
+def parse_request(request):
+    if is_json(request):
+        return json.loads(request)
+    else:
+        return {'error': 'invalid json format'}
+
+
+def handle_error(conn, error):
+    conn.send(error['error'])
+
+
 db = DatabaseUtils(DatabaseConnection('localhost', 'root', '778899', 'greenhouse'))
-sql = "insert into temperature (temperature, time) values (%s, %s)"
-value = (28.3, datetime.now().strftime('%Y-%m-%d %H:%M'))
-db.execute(sql, value)
-r = db.query('select * from temperature')
-print(r)
+
+
+def handle_request(conn, request):
+    if 'value' in request.keys():
+        sql = request['value']
+        r = db.query(sql)
+        conn.sendall(r)
+
+
+def accept(sock, _mask):
+    # conn is a new socket usable to send and receive data on the connection
+    conn, addr = sock.accept()
+    print('accepted', conn, 'from', addr)
+    conn.setblocking(False)
+    sel.register(conn, selectors.EVENT_READ, handle_client)
+
+
+def handle_client(conn, _mask):
+    # The return value is a bytes object representing the data received.
+    # The maximum amount of data to be received at once is specified by bufsize.
+    # When a recv returns 0 bytes, it means the other side has closed the connection.
+    data = conn.recv(1024)
+    if data:
+        request = parse_request(data)
+        print('echoing', repr(data), 'to', conn.getpeername())
+        if 'error' in request.keys():
+            handle_error(conn, request)
+        else:
+            handle_request(conn, request)
+    sel.unregister(conn)
+    conn.close()
+
+
+sel = selectors.DefaultSelector()
+listen_sock = socket.socket()
+try:
+    listen_sock.bind(('0.0.0.0', 6666))
+except OSError as msg:
+    print('sock.bind(): ' + str(msg))
+    sys.exit()
+
+listen_sock.listen(100)
+listen_sock.setblocking(False)
+# EVENT_READ Available for read
+# EVENT_WRITE Available for write
+sel.register(listen_sock, selectors.EVENT_READ, accept)
+
+while True:
+    # select() returns a list of (key, events) tuples, one for each ready file object.
+    # key is the SelectorKey instance corresponding to a ready file object.
+    # events is a bitmask of events ready on this file object.
+    # A SelectorKey is a namedtuple used to associate a file object to its
+    # underlying file descriptor, selected event mask and attached data.
+    # You can register multiple events for a socket.
+    # The reported mask will tell you which of those events is actually ready.
+    events = sel.select()
+    for key, event_mask in events:
+        callback = key.data
+        callback(key.fileobj, event_mask)
+
+# from datetime import datetime
+# from database.database_connection import DatabaseConnection
+# from database.database_utils import DatabaseUtils
+# db = DatabaseUtils(DatabaseConnection('localhost', 'root', '778899', 'greenhouse'))
+# sql = "insert into temperature (temperature, time) values (%s, %s)"
+# value = (28.3, datetime.now().strftime('%Y-%m-%d %H:%M'))
+# db.execute(sql, value)
+# r = db.query('select * from temperature')
+# print(r)
