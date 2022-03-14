@@ -53,17 +53,14 @@ def handle_error(conn, status_code, response_body):
 db = DatabaseUtils(DatabaseConnection('localhost', 'root', '778899', 'greenhouse'))
 
 
-def handle_request(conn, request):
-    if 'value' in request.keys():
-        sql = request['value']
-        r = db.query(sql)
-        conn.sendall(r)
+def handle_request(conn, sql):
+    result = db.query(sql)
+    conn.sendall(format_response('200 OK', 'application/json', result).encode('utf-8'))
 
 
 def accept(sock, _mask):
     # conn is a new socket usable to send and receive data on the connection
     conn, addr = sock.accept()
-    print('accepted', conn, 'from', addr)
     conn.setblocking(False)
     sel.register(conn, selectors.EVENT_READ, handle_client)
 
@@ -76,7 +73,7 @@ def handle_client(conn, _mask):
     if raw_request:
         request = parse_request(raw_request)
         if 'sql' in request.keys():
-            print('received\n', str(request.get('sql')), 'from\n', conn.getpeername())
+            print('received', str(request.get('sql')), 'from', conn.getpeername())
             handle_request(conn, request.get('sql'))
         else:
             handle_error(conn, '400 Bad Request', 'No sql parameter in headers.')

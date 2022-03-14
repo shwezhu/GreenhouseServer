@@ -1,4 +1,4 @@
-import utils
+import json
 
 
 class DatabaseUtils:
@@ -6,9 +6,14 @@ class DatabaseUtils:
         self._db = db
 
     def query(self, sql, params=None):
-        results = self._db.query(sql, params)
+        raw_results = self._db.query(sql, params)
         row_header = [d[0] for d in self._db.cursor.description]
-        return utils.Utils.query_to_json(results, row_header)
+        data = []
+        for r in raw_results:
+            data.append(dict(zip(row_header, r)))
+        json.dumps(data, indent=4, sort_keys=True, default=str)
+        results = json.dumps({'results': data})
+        return results
 
     def execute(self, sql, params=None):
         self._db.execute(sql, params)
