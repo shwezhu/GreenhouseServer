@@ -28,13 +28,14 @@ def is_json(myjson):
     return True
 
 
-# if 'error' in dict.keys():
-# print("value =", dict[error])
 def parse_request(request):
-    if is_json(request):
-        return json.loads(request)
-    else:
-        return {'error': 'invalid json format'}
+    raw_list = request.split("\r\n")
+    request = {}
+    for index in range(1, len(raw_list)):
+        item = raw_list[index].split(":")
+        if len(item) == 2:
+            request.update({item[0].lstrip(' '): item[1].lstrip(' ')})
+    return request
 
 
 def format_response(status_code, content_type, response_body):
@@ -44,7 +45,8 @@ def format_response(status_code, content_type, response_body):
 
 
 def handle_error(conn, status_code, response_body):
-    rp = format_response(status_code, HttpUtils.type['json'], response_body)
+    response_body = json.dumps({'error': response_body})
+    rp = format_response(status_code, 'application/json', response_body)
     conn.sendall(rp.encode('utf-8'))
 
 
@@ -70,14 +72,14 @@ def handle_client(conn, _mask):
     # The return value is a bytes object representing the data received.
     # The maximum amount of data to be received at once is specified by bufsize.
     # When a recv returns 0 bytes, it means the other side has closed the connection.
-    data = conn.recv(1024).decode('utf-8')
-    if data:
-        request = parse_request(data)
-        print('received ', repr(data), 'from', conn.getpeername())
-        if 'error' in request.keys():
-            # handle_error(conn, request)
+    raw_request = conn.recv(1024).decode('utf-8')
+    if raw_request:
+        request = parse_request(raw_request)
+        if 'sql' in request.keys():
+            print('received\n', str(request.get('sql')), 'from\n', conn.getpeername())
+            handle_request(conn, request.get('sql'))
         else:
-            handle_request(conn, request)
+            handle_error(conn, '400 Bad Request', 'No sql parameter in headers.')
     sel.unregister(conn)
     conn.close()
 

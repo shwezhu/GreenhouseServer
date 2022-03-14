@@ -3,7 +3,7 @@ import json
 
 class Utils:
     @staticmethod
-    def to_json(results, row_header):
+    def query_to_json(results, row_header):
         json_data = []
         for result in results:
             json_data.append(dict(zip(row_header, result)))

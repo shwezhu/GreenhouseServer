@@ -8,7 +8,7 @@ class DatabaseUtils:
     def query(self, sql, params=None):
         results = self._db.query(sql, params)
         row_header = [d[0] for d in self._db.cursor.description]
-        return utils.Utils.to_json(results, row_header)
+        return utils.Utils.query_to_json(results, row_header)
 
     def execute(self, sql, params=None):
         self._db.execute(sql, params)
