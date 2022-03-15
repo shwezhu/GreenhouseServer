@@ -2,6 +2,7 @@ import json
 import selectors
 import socket
 import sys
+import logging
 
 
 class HTTPServer:
@@ -15,8 +16,8 @@ class HTTPServer:
     def __init(self, addr, port=8080):
         try:
             self._sock.bind((addr, port))
-        except OSError as msg:
-            print('Error, sock.bind(): ' + str(msg))
+        except OSError as err:
+            logging.fatal(str(err) + ' in HTTPServer.__init method')
             sys.exit()
         self._sock.listen(200)
         self._sock.setblocking(False)
@@ -66,13 +67,13 @@ class HTTPServer:
         conn.sendall(rp.encode('utf-8'))
 
     def handle_request(self, conn, sql):
-        result = self.__query(conn, sql)
+        result = self.__query(conn=conn, sql=sql)
         if result is None:
             return None
         conn.sendall(HTTPServer.format_response('200 OK', 'application/json', result).encode('utf-8'))
 
     def __query(self, conn, sql, params=None):
-        raw_results = self._db.query(conn, sql, params)
+        raw_results = self._db.query(conn=conn, sql=sql, params=params)
         if raw_results is None:
             return None
         row_header = [d[0] for d in self._db.cursor.description]
@@ -84,5 +85,4 @@ class HTTPServer:
         return results
 
     def __execute(self, conn, sql, params=None):
-        self._db.execute(conn, sql, params)
-        self._db.commit()
+        self._db.execute(sql=sql, conn=conn, params=params)

@@ -1,11 +1,28 @@
+import logging
+
 from database.database_connection import DatabaseConnection
 from http_server.http_server import HTTPServer
+from mqtt_client import MQTTClient
+
+logging.basicConfig(
+    filename='system.log',
+    filemode='a',
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    encoding='utf-8',
+    level=logging.INFO
+)
+
+db = DatabaseConnection('localhost', 'root', '778899', 'greenhouse')
+
+mqtt_client = MQTTClient(db)
 
 server = HTTPServer(
     '0.0.0.0',
     8080,
-    DatabaseConnection('localhost', 'root', '778899', 'greenhouse')
+    db
 )
+
+mqtt_client.start_monitor()
 
 while True:
     # select() returns a list of (key, events) tuples, one for each ready file object.
