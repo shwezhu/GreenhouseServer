@@ -1,5 +1,7 @@
 import mysql.connector
 
+from http_server.http_server import HTTPServer
+
 
 class DatabaseConnection:
     def __init__(self, host, user, password, database_name):
@@ -36,18 +38,22 @@ class DatabaseConnection:
             self.commit()
         self.connection.close()
 
-    def execute(self, sql, params=None):
+    def execute(self, conn, sql, params=None):
         try:
             self.cursor.execute(sql, params or ())
-        except mysql.connector.Error as err:
-            print("Something went wrong: {}".format(err))
+        # mysql.connector.errors.Error: DatabaseError, InterfaceError, PoolError
+        # except (mysql.connector.InterfaceError, mysql.connector.Error) as err:
+        except mysql.connector.errors.Error as err:
+            HTTPServer.handle_error(conn, '404 Not Found', str(err))
+            return None
 
     def fetchall(self):
         return self.cursor.fetchall()
 
-    def query(self, sql, params=None):
+    def query(self, conn, sql, params=None):
         try:
             self.cursor.execute(sql, params or ())
-        except mysql.connector.Error as err:
-            print("Something went wrong: {}".format(err))
+        except mysql.connector.errors.Error as err:
+            HTTPServer.handle_error(conn, '404 Not Found', str(err))
+            return None
         return self.fetchall()

@@ -18,7 +18,7 @@ class HTTPServer:
         except OSError as msg:
             print('Error, sock.bind(): ' + str(msg))
             sys.exit()
-        self._sock.listen(100)
+        self._sock.listen(200)
         self._sock.setblocking(False)
         self.sel.register(self._sock, selectors.EVENT_READ, self.__accept)
 
@@ -66,11 +66,15 @@ class HTTPServer:
         conn.sendall(rp.encode('utf-8'))
 
     def handle_request(self, conn, sql):
-        result = self.__query(sql)
+        result = self.__query(conn, sql)
+        if result is None:
+            return None
         conn.sendall(HTTPServer.format_response('200 OK', 'application/json', result).encode('utf-8'))
 
-    def __query(self, sql, params=None):
-        raw_results = self._db.query(sql, params)
+    def __query(self, conn, sql, params=None):
+        raw_results = self._db.query(conn, sql, params)
+        if raw_results is None:
+            return None
         row_header = [d[0] for d in self._db.cursor.description]
         data = []
         for r in raw_results:
@@ -79,6 +83,6 @@ class HTTPServer:
         results = json.dumps({'results': data})
         return results
 
-    def __execute(self, sql, params=None):
-        self._db.execute(sql, params)
+    def __execute(self, conn, sql, params=None):
+        self._db.execute(conn, sql, params)
         self._db.commit()
