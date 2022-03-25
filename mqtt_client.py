@@ -28,9 +28,9 @@ class MQTTClient:
 
     def __on_message(self, _client, _userdata, msg):
         if str(msg.topic) == 'greenhouse/temperature':
-            sql = "insert into temperature (temperature, time) values (%s, %s)"
+            sql = "insert into temperature (temperature, date) values (%s, %s)"
         else:
-            sql = "insert into humidity (humidity, time) values (%s, %s)"
+            sql = "insert into humidity (humidity, date) values (%s, %s)"
         raw_data = msg.payload.decode('utf-8')
         try:
             data = float(raw_data)

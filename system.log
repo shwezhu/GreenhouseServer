@@ -1,3 +1,1 @@
-2022-03-15 22:39:06,138 [ERROR] could not convert string to float: 'hello' The data was hello from topic: greenhouse/humidity
-2022-03-15 22:41:17,020 [ERROR] could not convert string to float: 'hi' The data was hi from topic: greenhouse/humidity
-2022-03-15 22:45:09,816 [ERROR] 1146 (42S02): Table 'greenhouse.humidity' doesn't exist in DatabaseConnection.execute method
+2022-03-24 22:15:30,533 [ERROR] 1146 (42S02): Table 'greenhouse.humidity' doesn't exist in DatabaseConnection.query method
